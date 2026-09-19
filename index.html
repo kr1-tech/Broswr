@@ -38,83 +38,33 @@
       border-bottom: 1px solid var(--line);
     }
 
-    .brand {
-      margin-right: 8px;
-      color: var(--accent);
-      font-size: 1.15rem;
-      font-weight: 800;
-      letter-spacing: .02em;
-    }
-
+    .brand { margin-right: 8px; color: var(--accent); font-size: 1.15rem; font-weight: 800; letter-spacing: .02em; }
     button, input { font: inherit; }
-    button {
-      min-width: 38px;
-      height: 36px;
-      padding: 0 11px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: var(--panel-2);
-      color: var(--text);
-      cursor: pointer;
-    }
+    button { min-width: 38px; height: 36px; padding: 0 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); color: var(--text); cursor: pointer; }
     button:hover:not(:disabled), button:focus-visible { background: #34445c; outline: 2px solid var(--accent); outline-offset: 1px; }
     button:disabled { cursor: not-allowed; opacity: .45; }
-
     form { display: flex; flex: 1; gap: 8px; }
-    .address-bar {
-      flex: 1;
-      min-width: 0;
-      height: 36px;
-      padding: 0 13px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      outline: none;
-      background: #111827;
-      color: var(--text);
-    }
+    .address-bar { flex: 1; min-width: 0; height: 36px; padding: 0 13px; border: 1px solid var(--line); border-radius: 7px; outline: none; background: #111827; color: var(--text); }
     .address-bar:focus { border-color: var(--accent); box-shadow: 0 0 0 2px #2563eb44; }
     .go { background: var(--accent-dark); border-color: var(--accent-dark); font-weight: 700; }
 
-    .page {
-      position: relative;
-      flex: 1;
-      min-height: 0;
-      background: white;
-    }
+    .page { position: relative; flex: 1; min-height: 0; background: white; }
     iframe { display: block; width: 100%; height: 100%; border: 0; background: white; }
-
-    .welcome {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background: linear-gradient(135deg, #111827, #172554);
-      text-align: center;
-    }
+    .welcome { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: linear-gradient(135deg, #111827, #172554); text-align: center; }
     .welcome-card { max-width: 620px; }
     .welcome h1 { margin: 0 0 10px; font-size: clamp(2.2rem, 7vw, 4.5rem); }
     .welcome p { margin: 8px 0; color: var(--muted); line-height: 1.6; }
     .welcome strong { color: var(--accent); }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
+    .blocked-panel { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: linear-gradient(135deg, #111827, #172554); text-align: center; }
+    .blocked-card { max-width: 620px; }
+    .blocked-card h2 { margin-top: 0; }
+    .blocked-card p { color: var(--muted); line-height: 1.6; }
+    .blocked-card code { color: var(--accent); overflow-wrap: anywhere; }
+    .external-link { background: var(--accent-dark); border-color: var(--accent-dark); font-weight: 700; }
 
-    .status {
-      min-height: 25px;
-      padding: 4px 12px;
-      overflow: hidden;
-      background: var(--panel);
-      color: var(--muted);
-      font-size: .8rem;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 600px) {
-      .toolbar { flex-wrap: wrap; }
-      .brand { width: 100%; margin-bottom: 2px; }
-      form { width: 100%; }
-      .toolbar > button { flex: 1; }
-    }
+    .status { min-height: 25px; padding: 4px 12px; overflow: hidden; background: var(--panel); color: var(--muted); font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 600px) { .toolbar { flex-wrap: wrap; } .brand { width: 100%; margin-bottom: 2px; } form { width: 100%; } .toolbar > button { flex: 1; } }
   </style>
 </head>
 <body>
@@ -125,9 +75,7 @@
     <button id="reloadBtn" type="button" title="Reload page" aria-label="Reload page">↻</button>
     <button id="homeBtn" type="button" title="Open Broswr home" aria-label="Open Broswr home">⌂</button>
     <form id="urlForm" novalidate>
-      <input id="addressBar" class="address-bar" type="text" inputmode="url"
-        autocomplete="url" spellcheck="false" placeholder="Enter a website address, for example https://example.com"
-        aria-label="Website address">
+      <input id="addressBar" class="address-bar" type="text" inputmode="url" autocomplete="url" spellcheck="false" placeholder="Enter a website address, for example https://example.com" aria-label="Website address">
       <button class="go" type="submit">Go</button>
     </form>
   </header>
@@ -141,6 +89,14 @@
       </div>
     </section>
     <iframe id="viewport" title="Website viewport" hidden></iframe>
+    <section id="blockedPanel" class="blocked-panel hidden" aria-live="polite">
+      <div class="blocked-card">
+        <h2>This website cannot be displayed inside Broswr</h2>
+        <p><code id="blockedUrl"></code> refused to connect because this site does not allow iframe embedding.</p>
+        <p>The result stays here instead of automatically opening another browser tab.</p>
+        <button id="externalBtn" class="external-link" type="button">Open in browser tab</button>
+      </div>
+    </section>
   </main>
   <div id="status" class="status" role="status" aria-live="polite">Ready — enter an http:// or https:// address.</div>
 
@@ -150,111 +106,78 @@
       const addressBar = document.querySelector('#addressBar');
       const viewport = document.querySelector('#viewport');
       const welcome = document.querySelector('#welcome');
+      const blockedPanel = document.querySelector('#blockedPanel');
+      const blockedUrl = document.querySelector('#blockedUrl');
+      const externalBtn = document.querySelector('#externalBtn');
       const status = document.querySelector('#status');
       const backBtn = document.querySelector('#backBtn');
       const forwardBtn = document.querySelector('#forwardBtn');
       const reloadBtn = document.querySelector('#reloadBtn');
       const homeBtn = document.querySelector('#homeBtn');
-
       let lastAttemptedUrl = '';
-      let fallbackTimer = null;
 
       function setStatus(message) { status.textContent = message; }
 
       function showHome() {
         viewport.hidden = true;
+        blockedPanel.classList.add('hidden');
         welcome.classList.remove('hidden');
         addressBar.value = '';
+        lastAttemptedUrl = '';
         setStatus('Broswr home');
         updateNavigationButtons();
       }
 
-      function openExternally(url) {
-        try {
-          window.open(url, '_blank', 'noopener,noreferrer');
-        } catch (_) {
-          window.location.href = url;
-        }
-      }
-
       function showBlockedMessage(url) {
-        const finalUrl = url || lastAttemptedUrl;
-        if (!finalUrl) return;
-        setStatus(`This site blocks being displayed inside Broswr. It was opened in a new tab instead.`);
-        openExternally(finalUrl);
-        welcome.classList.remove('hidden');
+        lastAttemptedUrl = url || lastAttemptedUrl;
+        blockedUrl.textContent = lastAttemptedUrl;
         viewport.hidden = true;
+        welcome.classList.add('hidden');
+        blockedPanel.classList.remove('hidden');
+        setStatus('This site blocks iframe embedding.');
       }
 
       function updateNavigationButtons() {
-        try {
-          backBtn.disabled = !viewport.contentWindow || viewport.contentWindow.history.length < 2;
-        } catch (_) { backBtn.disabled = false; }
+        try { backBtn.disabled = !viewport.contentWindow || viewport.contentWindow.history.length < 2; }
+        catch (_) { backBtn.disabled = false; }
       }
 
       function navigate(rawUrl) {
         const value = rawUrl.trim();
         if (!value) { setStatus('Enter a website address first.'); addressBar.focus(); return; }
-
-        // Deliberately accept only real web URLs. There is no search-engine fallback.
         let url;
-        try {
-          url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
-        } catch (_) {
-          setStatus('That is not a valid web address. Use https://example.com');
-          return;
-        }
-        if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) {
-          setStatus('Only http:// and https:// addresses are supported.');
-          return;
-        }
+        try { url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`); }
+        catch (_) { setStatus('That is not a valid web address. Use https://example.com'); return; }
+        if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) { setStatus('Only http:// and https:// addresses are supported.'); return; }
 
         const finalUrl = url.href;
         lastAttemptedUrl = finalUrl;
         addressBar.value = finalUrl;
         welcome.classList.add('hidden');
+        blockedPanel.classList.add('hidden');
         viewport.hidden = false;
         viewport.src = finalUrl;
         setStatus(`Loading ${finalUrl}`);
-
-        clearTimeout(fallbackTimer);
-        fallbackTimer = setTimeout(() => {
-          if (!lastAttemptedUrl || lastAttemptedUrl !== finalUrl) return;
-          try {
-            const currentHref = viewport.contentWindow.location.href;
-            if (currentHref === 'about:blank') {
-              showBlockedMessage(finalUrl);
-            }
-          } catch (_) {
-            showBlockedMessage(finalUrl);
-          }
-        }, 1800);
       }
 
       form.addEventListener('submit', (event) => { event.preventDefault(); navigate(addressBar.value); });
       reloadBtn.addEventListener('click', () => {
-        if (!viewport.hidden && viewport.src && viewport.src !== 'about:blank') {
-          viewport.contentWindow.location.reload();
-          setStatus(`Reloading ${viewport.src}`);
-        }
+        if (!viewport.hidden && viewport.src && viewport.src !== 'about:blank') { viewport.contentWindow.location.reload(); setStatus(`Reloading ${viewport.src}`); }
       });
       homeBtn.addEventListener('click', showHome);
+      externalBtn.addEventListener('click', () => { if (lastAttemptedUrl) window.open(lastAttemptedUrl, '_blank', 'noopener,noreferrer'); });
       backBtn.addEventListener('click', () => { try { viewport.contentWindow.history.back(); } catch (_) {} });
       forwardBtn.addEventListener('click', () => { try { viewport.contentWindow.history.forward(); } catch (_) {} });
       viewport.addEventListener('load', () => {
         try {
           const href = viewport.contentWindow.location.href;
-          if (href.startsWith('about:blank')) {
-            return;
-          }
+          if (href.startsWith('about:blank')) return;
           addressBar.value = href;
         } catch (_) { /* cross-origin pages block reading their URL */ }
         setStatus('Page loaded');
         updateNavigationButtons();
       });
-      viewport.addEventListener('error', () => {
-        showBlockedMessage(lastAttemptedUrl || addressBar.value);
-      });
+      viewport.addEventListener('error', () => showBlockedMessage(lastAttemptedUrl || addressBar.value));
       addressBar.addEventListener('keydown', (event) => { if (event.key === 'Escape') addressBar.value = ''; });
       updateNavigationButtons();
     })();
