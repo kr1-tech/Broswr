@@ -156,6 +156,9 @@
       const reloadBtn = document.querySelector('#reloadBtn');
       const homeBtn = document.querySelector('#homeBtn');
 
+      let lastAttemptedUrl = '';
+      let fallbackTimer = null;
+
       function setStatus(message) { status.textContent = message; }
 
       function showHome() {
@@ -164,6 +167,23 @@
         addressBar.value = '';
         setStatus('Broswr home');
         updateNavigationButtons();
+      }
+
+      function openExternally(url) {
+        try {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        } catch (_) {
+          window.location.href = url;
+        }
+      }
+
+      function showBlockedMessage(url) {
+        const finalUrl = url || lastAttemptedUrl;
+        if (!finalUrl) return;
+        setStatus(`This site blocks being displayed inside Broswr. It was opened in a new tab instead.`);
+        openExternally(finalUrl);
+        welcome.classList.remove('hidden');
+        viewport.hidden = true;
       }
 
       function updateNavigationButtons() {
@@ -190,11 +210,25 @@
         }
 
         const finalUrl = url.href;
+        lastAttemptedUrl = finalUrl;
         addressBar.value = finalUrl;
         welcome.classList.add('hidden');
         viewport.hidden = false;
         viewport.src = finalUrl;
         setStatus(`Loading ${finalUrl}`);
+
+        clearTimeout(fallbackTimer);
+        fallbackTimer = setTimeout(() => {
+          if (!lastAttemptedUrl || lastAttemptedUrl !== finalUrl) return;
+          try {
+            const currentHref = viewport.contentWindow.location.href;
+            if (currentHref === 'about:blank') {
+              showBlockedMessage(finalUrl);
+            }
+          } catch (_) {
+            showBlockedMessage(finalUrl);
+          }
+        }, 1800);
       }
 
       form.addEventListener('submit', (event) => { event.preventDefault(); navigate(addressBar.value); });
@@ -208,11 +242,19 @@
       backBtn.addEventListener('click', () => { try { viewport.contentWindow.history.back(); } catch (_) {} });
       forwardBtn.addEventListener('click', () => { try { viewport.contentWindow.history.forward(); } catch (_) {} });
       viewport.addEventListener('load', () => {
-        try { addressBar.value = viewport.contentWindow.location.href; } catch (_) { /* cross-origin pages block reading their URL */ }
+        try {
+          const href = viewport.contentWindow.location.href;
+          if (href.startsWith('about:blank')) {
+            return;
+          }
+          addressBar.value = href;
+        } catch (_) { /* cross-origin pages block reading their URL */ }
         setStatus('Page loaded');
         updateNavigationButtons();
       });
-      viewport.addEventListener('error', () => setStatus('This page could not be loaded.'));
+      viewport.addEventListener('error', () => {
+        showBlockedMessage(lastAttemptedUrl || addressBar.value);
+      });
       addressBar.addEventListener('keydown', (event) => { if (event.key === 'Escape') addressBar.value = ''; });
       updateNavigationButtons();
     })();
