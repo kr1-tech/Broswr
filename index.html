@@ -3,138 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Search Engine</title>
+    <title>Simple Browser UI</title>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+
         body {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #0a0a0a;
-            color: #00ff66;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
             height: 100vh;
-            padding: 20px;
+            background-color: #f0f0f0;
         }
-        .search-container {
-            text-align: center;
-            width: 100%;
-            max-width: 600px;
-        }
-        /* Custom Glowing Logo */
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px #00ff66;
-            letter-spacing: 2px;
-        }
-        /* The Search Box Layout */
-        .search-box-wrapper {
-            position: relative;
-            margin-bottom: 25px;
-        }
-        .search-input {
-            width: 100%;
-            background-color: #111;
-            border: 2px solid #00ff66;
-            border-radius: 25px;
-            padding: 15px 25px;
-            font-size: 1.2rem;
-            color: #00ff66;
-            font-family: inherit;
-            outline: none;
-            box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
-            transition: all 0.3s ease;
-        }
-        .search-input:focus {
-            box-shadow: 0 0 25px rgba(0, 255, 102, 0.6);
-            background-color: #151515;
-        }
-        /* Action Buttons */
-        .btn-group {
+
+        /* Toolbar Styling */
+        .toolbar {
             display: flex;
-            justify-content: center;
-            gap: 15px;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #e0e0e0;
+            border-bottom: 1px solid #ccc;
+            gap: 8px;
         }
-        .search-btn {
-            background-color: #111;
-            color: #00ff66;
-            border: 2px solid #00ff66;
-            padding: 10px 24px;
-            font-size: 1rem;
-            border-radius: 20px;
+
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid #ababab;
+            background-color: #ffffff;
+            border-radius: 4px;
             cursor: pointer;
-            font-family: inherit;
-            font-weight: bold;
-            transition: all 0.2s ease;
+            font-size: 14px;
         }
-        .search-btn:hover {
-            background-color: #00ff66;
-            color: #000;
-            box-shadow: 0 0 15px #00ff66;
-            transform: translateY(-2px);
+
+        .btn:hover {
+            background-color: #eaeaea;
         }
-        .search-btn:active {
-            transform: translateY(0);
+
+        .address-bar {
+            flex-grow: 1;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
         }
-        footer {
-            position: absolute;
-            bottom: 15px;
-            font-size: 0.8rem;
-            color: #555;
+
+        /* Viewport Container */
+        .viewport-container {
+            flex-grow: 1;
+            width: 100%;
+            height: calc(100vh - 45px);
+            background-color: #ffffff;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="search-container">
-        <!-- Your custom search engine name -->
-        <h1>QUANTUM</h1>
-        
-        <!-- Search Input Form -->
-        <div class="search-box-wrapper">
-            <input type="text" id="searchQuery" class="search-input" placeholder="Search the matrix..." autocomplete="off" autofocus onkeydown="if(event.key === 'Enter') executeSearch()">
-        </div>
-
-        <!-- Interactive Buttons -->
-        <div class="btn-group">
-            <button class="search-btn" onclick="executeSearch()">Quantum Search</button>
-            <button class="search-btn" onclick="feelingLucky()">I'm Feeling Lucky</button>
-        </div>
+    <!-- Browser Controls Toolbar -->
+    <div class="toolbar">
+        <button class="btn" id="refreshBtn">↻ Reload</button>
+        <form id="urlForm" style="display: flex; flex-grow: 1; gap: 8px;">
+            <input 
+                type="text" 
+                id="addressBar" 
+                class="address-bar" 
+                placeholder="Enter URL (e.g., https://example.com)" 
+                required 
+            />
+            <button type="submit" class="btn">Go</button>
+        </form>
     </div>
 
-    <footer>
-        &copy; 2026 Powered by Quantum Engine Architecture
-    </footer>
+    <!-- Main Content Area -->
+    <div class="viewport-container">
+        <iframe id="viewport" src="about:blank" title="Browser Viewport"></iframe>
+    </div>
 
     <script>
-        // Function that processes the user query and redirects to live results
-        function executeSearch() {
-            const query = document.getElementById('searchQuery').value.trim();
-            if (query !== "") {
-                // Encodes the text so it can safely pass into a web URL string
-                const encodedQuery = encodeURIComponent(query);
-                // Redirects the current tab straight to real web results
-                window.location.href = "https://google.com" + encodedQuery;
-            }
-        }
+        const urlForm = document.getElementById('urlForm');
+        const addressBar = document.getElementById('addressBar');
+        const viewport = document.getElementById('viewport');
+        const refreshBtn = document.getElementById('refreshBtn');
 
-        // Simulates Google's "I'm Feeling Lucky" button to take you to the top direct link
-        function feelingLucky() {
-            const query = document.getElementById('searchQuery').value.trim();
-            if (query !== "") {
-                const encodedQuery = encodeURIComponent(query);
-                window.location.href = "https://google.com" + encodedQuery + "&btnI=I";
-            } else {
-                // If input is blank, go directly to the Google homepage
-                window.location.href = "https://google.com";
+        // Handle URL Submission
+        urlForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            let inputUrl = addressBar.value.trim();
+
+            // Automatically append https:// if missing scheme
+            if (!/^https?:\/\//i.test(inputUrl)) {
+                inputUrl = 'https://' + inputUrl;
+                addressBar.value = inputUrl;
             }
-        }
+
+            // Update iframe src attribute
+            viewport.src = inputUrl;
+        });
+
+        // Reload current page
+        refreshBtn.addEventListener('click', () => {
+            if (viewport.src && viewport.src !== 'about:blank') {
+                viewport.src = viewport.src;
+            }
+        });
     </script>
+
 </body>
 </html>
