@@ -1,121 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Browser UI</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Broswr - a simple, original browser interface.">
+  <title>Broswr</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111827;
+      --panel: #1f2937;
+      --panel-2: #273449;
+      --line: #374151;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --accent-dark: #2563eb;
+    }
 
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background-color: #f0f0f0;
-        }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; }
+    body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-        /* Toolbar Styling */
-        .toolbar {
-            display: flex;
-            align-items: center;
-            padding: 8px 12px;
-            background-color: #e0e0e0;
-            border-bottom: 1px solid #ccc;
-            gap: 8px;
-        }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
 
-        .btn {
-            padding: 6px 12px;
-            border: 1px solid #ababab;
-            background-color: #ffffff;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
+    .brand {
+      margin-right: 8px;
+      color: var(--accent);
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
 
-        .btn:hover {
-            background-color: #eaeaea;
-        }
+    button, input { font: inherit; }
+    button {
+      min-width: 38px;
+      height: 36px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel-2);
+      color: var(--text);
+      cursor: pointer;
+    }
+    button:hover:not(:disabled), button:focus-visible { background: #34445c; outline: 2px solid var(--accent); outline-offset: 1px; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
 
-        .address-bar {
-            flex-grow: 1;
-            padding: 6px 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
-            outline: none;
-        }
+    form { display: flex; flex: 1; gap: 8px; }
+    .address-bar {
+      flex: 1;
+      min-width: 0;
+      height: 36px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      outline: none;
+      background: #111827;
+      color: var(--text);
+    }
+    .address-bar:focus { border-color: var(--accent); box-shadow: 0 0 0 2px #2563eb44; }
+    .go { background: var(--accent-dark); border-color: var(--accent-dark); font-weight: 700; }
 
-        /* Viewport Container */
-        .viewport-container {
-            flex-grow: 1;
-            width: 100%;
-            height: calc(100vh - 45px);
-            background-color: #ffffff;
-        }
+    .page {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      background: white;
+    }
+    iframe { display: block; width: 100%; height: 100%; border: 0; background: white; }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-    </style>
+    .welcome {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: linear-gradient(135deg, #111827, #172554);
+      text-align: center;
+    }
+    .welcome-card { max-width: 620px; }
+    .welcome h1 { margin: 0 0 10px; font-size: clamp(2.2rem, 7vw, 4.5rem); }
+    .welcome p { margin: 8px 0; color: var(--muted); line-height: 1.6; }
+    .welcome strong { color: var(--accent); }
+    .hidden { display: none; }
+
+    .status {
+      min-height: 25px;
+      padding: 4px 12px;
+      overflow: hidden;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: .8rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 600px) {
+      .toolbar { flex-wrap: wrap; }
+      .brand { width: 100%; margin-bottom: 2px; }
+      form { width: 100%; }
+      .toolbar > button { flex: 1; }
+    }
+  </style>
 </head>
 <body>
+  <header class="toolbar" aria-label="Broswr controls">
+    <div class="brand">Broswr</div>
+    <button id="backBtn" type="button" title="Go back" aria-label="Go back">←</button>
+    <button id="forwardBtn" type="button" title="Go forward" aria-label="Go forward">→</button>
+    <button id="reloadBtn" type="button" title="Reload page" aria-label="Reload page">↻</button>
+    <button id="homeBtn" type="button" title="Open Broswr home" aria-label="Open Broswr home">⌂</button>
+    <form id="urlForm" novalidate>
+      <input id="addressBar" class="address-bar" type="text" inputmode="url"
+        autocomplete="url" spellcheck="false" placeholder="Enter a website address, for example https://example.com"
+        aria-label="Website address">
+      <button class="go" type="submit">Go</button>
+    </form>
+  </header>
 
-    <!-- Browser Controls Toolbar -->
-    <div class="toolbar">
-        <button class="btn" id="refreshBtn">↻ Reload</button>
-        <form id="urlForm" style="display: flex; flex-grow: 1; gap: 8px;">
-            <input 
-                type="text" 
-                id="addressBar" 
-                class="address-bar" 
-                placeholder="Enter URL (e.g., https://example.com)" 
-                required 
-            />
-            <button type="submit" class="btn">Go</button>
-        </form>
-    </div>
+  <main class="page">
+    <section id="welcome" class="welcome" aria-label="Broswr home page">
+      <div class="welcome-card">
+        <h1>Broswr</h1>
+        <p>A small, original browser interface made for this site.</p>
+        <p>Type a complete address above and press <strong>Go</strong>. Broswr never turns an invalid address into a Google search.</p>
+      </div>
+    </section>
+    <iframe id="viewport" title="Website viewport" hidden></iframe>
+  </main>
+  <div id="status" class="status" role="status" aria-live="polite">Ready — enter an http:// or https:// address.</div>
 
-    <!-- Main Content Area -->
-    <div class="viewport-container">
-        <iframe id="viewport" src="about:blank" title="Browser Viewport"></iframe>
-    </div>
+  <script>
+    (() => {
+      const form = document.querySelector('#urlForm');
+      const addressBar = document.querySelector('#addressBar');
+      const viewport = document.querySelector('#viewport');
+      const welcome = document.querySelector('#welcome');
+      const status = document.querySelector('#status');
+      const backBtn = document.querySelector('#backBtn');
+      const forwardBtn = document.querySelector('#forwardBtn');
+      const reloadBtn = document.querySelector('#reloadBtn');
+      const homeBtn = document.querySelector('#homeBtn');
 
-    <script>
-        const urlForm = document.getElementById('urlForm');
-        const addressBar = document.getElementById('addressBar');
-        const viewport = document.getElementById('viewport');
-        const refreshBtn = document.getElementById('refreshBtn');
+      function setStatus(message) { status.textContent = message; }
 
-        // Handle URL Submission
-        urlForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            let inputUrl = addressBar.value.trim();
+      function showHome() {
+        viewport.hidden = true;
+        welcome.classList.remove('hidden');
+        addressBar.value = '';
+        setStatus('Broswr home');
+        updateNavigationButtons();
+      }
 
-            // Automatically append https:// if missing scheme
-            if (!/^https?:\/\//i.test(inputUrl)) {
-                inputUrl = 'https://' + inputUrl;
-                addressBar.value = inputUrl;
-            }
+      function updateNavigationButtons() {
+        try {
+          backBtn.disabled = !viewport.contentWindow || viewport.contentWindow.history.length < 2;
+        } catch (_) { backBtn.disabled = false; }
+      }
 
-            // Update iframe src attribute
-            viewport.src = inputUrl;
-        });
+      function navigate(rawUrl) {
+        const value = rawUrl.trim();
+        if (!value) { setStatus('Enter a website address first.'); addressBar.focus(); return; }
 
-        // Reload current page
-        refreshBtn.addEventListener('click', () => {
-            if (viewport.src && viewport.src !== 'about:blank') {
-                viewport.src = viewport.src;
-            }
-        });
-    </script>
+        // Deliberately accept only real web URLs. There is no search-engine fallback.
+        let url;
+        try {
+          url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+        } catch (_) {
+          setStatus('That is not a valid web address. Use https://example.com');
+          return;
+        }
+        if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) {
+          setStatus('Only http:// and https:// addresses are supported.');
+          return;
+        }
 
+        const finalUrl = url.href;
+        addressBar.value = finalUrl;
+        welcome.classList.add('hidden');
+        viewport.hidden = false;
+        viewport.src = finalUrl;
+        setStatus(`Loading ${finalUrl}`);
+      }
+
+      form.addEventListener('submit', (event) => { event.preventDefault(); navigate(addressBar.value); });
+      reloadBtn.addEventListener('click', () => {
+        if (!viewport.hidden && viewport.src && viewport.src !== 'about:blank') {
+          viewport.contentWindow.location.reload();
+          setStatus(`Reloading ${viewport.src}`);
+        }
+      });
+      homeBtn.addEventListener('click', showHome);
+      backBtn.addEventListener('click', () => { try { viewport.contentWindow.history.back(); } catch (_) {} });
+      forwardBtn.addEventListener('click', () => { try { viewport.contentWindow.history.forward(); } catch (_) {} });
+      viewport.addEventListener('load', () => {
+        try { addressBar.value = viewport.contentWindow.location.href; } catch (_) { /* cross-origin pages block reading their URL */ }
+        setStatus('Page loaded');
+        updateNavigationButtons();
+      });
+      viewport.addEventListener('error', () => setStatus('This page could not be loaded.'));
+      addressBar.addEventListener('keydown', (event) => { if (event.key === 'Escape') addressBar.value = ''; });
+      updateNavigationButtons();
+    })();
+  </script>
 </body>
 </html>
